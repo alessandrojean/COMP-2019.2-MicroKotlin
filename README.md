@@ -46,6 +46,13 @@ Para executar o transpilador.
 $ gradle transpile --args='<arquivo-de-entrada>'
 ```
 
+Alternativamente você pode utilizar o arquivo `jar` já compilado também
+seguindo os comandos abaixo.
+
+```console
+$ java -jar build/libs/MicroKotlin.jar <arquivo-de-entrada>
+```
+
 [Gradle]: https://gradle.org/
 
 ## Contribuindo

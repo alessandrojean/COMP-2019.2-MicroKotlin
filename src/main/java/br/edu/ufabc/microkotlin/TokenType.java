@@ -1,0 +1,24 @@
+package br.edu.ufabc.microkotlin;
+
+/**
+ * Representa os tipos possíveis de tokens.
+ */
+public enum TokenType {
+  IDENTIFIER, NUMBER, STRING, BOOLEAN,
+
+  PLUS, MINUS, TIMES, SLASH, REM,
+  COLLON, COMMA, DOT, SEMICOLON, LEFT_PAREN, RIGHT_PAREN,
+  LEFT_BRACE, RIGHT_BRACE,
+
+  BANG, BANG_EQUAL,
+  EQUAL, EQUAL_EQUAL,
+  GREATER, GREATER_EQUAL,
+  LESS, LESS_EQUAL,
+
+  AND, OR,
+
+  BREAK, DO, ELSE, FALSE, FUN, IF, NULL, PRINT, PRINTLN,
+  RETURN, TRUE, VAL, VAR, WHILE,
+
+  EOF
+}

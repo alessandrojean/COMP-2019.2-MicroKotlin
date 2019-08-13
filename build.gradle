@@ -33,6 +33,15 @@ application {
   mainClassName = 'br.edu.ufabc.microkotlin.MicroKotlin'
 }
 
+jar {
+  manifest {
+    attributes(
+      'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
+      'Main-Class': 'br.edu.ufabc.microkotlin.MicroKotlin'
+    )
+  }
+}
+
 task transpile(type: JavaExec) {
   group = 'Run'
   description = 'Execute the transpiler for the input file'
