@@ -40,7 +40,7 @@ public class MicroKotlin {
    */
   private static void transpileFile(String file) throws IOException {
     byte[] bytes = Files.readAllBytes(Paths.get(file));
-    transpile(new String(bytes, Charset.defaultCharset()));
+    transpile(new String(bytes, Charset.defaultCharset()), file);
 
     if (hadError) {
       System.exit(1);
@@ -52,7 +52,7 @@ public class MicroKotlin {
    *
    * @param sourceCode código-fonte na linguagem MicroKotlin
    */
-  private static void transpile(String sourceCode) {
+  private static void transpile(String sourceCode, String inputFile) throws IOException {
     Scanner scanner = new Scanner(sourceCode);
     List<Token> tokens = scanner.scanTokens();
     Parser parser = new Parser(tokens);
@@ -60,7 +60,9 @@ public class MicroKotlin {
 
     if (hadError) return;
 
-    // TODO: Transpiler.
+    String outputFile = inputFile.replace(".kt", ".java");
+    Transpiler transpiler = new Transpiler(outputFile);
+    transpiler.transpile(program);
   }
 
   /**
