@@ -12,6 +12,9 @@ import static br.edu.ufabc.microkotlin.TokenType.*;
  */
 public class Parser {
 
+  /**
+   * Erro ocorrido durante a análise semântica.
+   */
   @SuppressWarnings("serial")
   private static class ParseError extends RuntimeException {}
 
@@ -29,6 +32,13 @@ public class Parser {
     this.tokens = tokens;
   }
 
+  /**
+   * Efetua a análise semântica, devolvendo ao fim
+   * uma instância de Program com o programa que
+   * deverá ser transpilado.
+   *
+   * @return programa a ser transpilado
+   */
   public Program parse() {
     List<StmtVal> constants = new ArrayList<>();
     while (match(VAL)) {
@@ -39,6 +49,11 @@ public class Parser {
     return new Program(constants, statements);
   }
 
+  /**
+   * Avalia a função main.
+   *
+   * main → "fun" "main" "(" ")" block
+   */
   public List<Stmt> main() {
     consume(FUN, "Expect 'fun' after constants.");
     Token main = consume(IDENTIFIER, "Expect function name.");
@@ -446,6 +461,12 @@ public class Parser {
     throw error(peek(), "Expect expression.");
   }
 
+  /**
+   * Verifica se o token atual é igual a um dos passados como argumento.
+   *
+   * @param types tokens esperados
+   * @return verdadeiro se são iguais
+   */
   private boolean match(TokenType... types) {
     for (TokenType type : types) {
       if (check(type))  {
@@ -457,39 +478,84 @@ public class Parser {
     return false;
   }
 
+  /**
+   * Consome um token do tipo se é igual ao atual,
+   * ou reporta um erro caso não seja.
+   *
+   * @param type    tipo esperado
+   * @param message mensagem de erro
+   * @return token avançado
+   */
   private Token consume(TokenType type, String message) {
     if (check(type)) return advance();
 
     throw error(peek(), message);
   }
 
+  /**
+   * Verifica se o token atual é do tipo esperado.
+   *
+   * @param type tipo esperado
+   * @return verdadeiro se é igual
+   */
   private boolean check(TokenType type) {
     if (isAtEnd()) return false;
     return peek().type == type;
   }
 
+  /**
+   * Avança em um token.
+   *
+   * @return token anterior
+   */
   private Token advance() {
     if (!isAtEnd()) current++;
     return previous();
   }
 
+  /**
+   * Checa se chegou ao fim.
+   *
+   * @return verdadeiro se chegou
+   */
   private boolean isAtEnd() {
     return peek().type == EOF;
   }
 
+  /**
+   * Retorna o token atual.
+   *
+   * @return o token atual
+   */
   private Token peek() {
     return tokens.get(current);
   }
 
+  /**
+   * Retorna o token anterior.
+   *
+   * @return o token anterior
+   */
   private Token previous() {
     return tokens.get(current - 1);
   }
 
+  /**
+   * Cria um erro baseado no token e mensagem.
+   *
+   * @param token   token errado
+   * @param message mensagem de erro
+   * @return erro de runtime
+   */
   private ParseError error(Token token, String message) {
     MicroKotlin.error(token, message);
     return new ParseError();
   }
 
+  /**
+   * Efetua a sincronização em caso de erro.
+   */
+  @SuppressWarnings("incomplete-switch")
   private void synchronize() {
     advance();
 

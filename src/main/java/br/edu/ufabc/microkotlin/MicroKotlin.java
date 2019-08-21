@@ -86,6 +86,12 @@ public class MicroKotlin {
     hadError = true;
   }
 
+  /**
+   * Reporta um erro do Parser.
+   *
+   * @param token token com erro
+   * @param message mensagem de erro
+   */
   public static void error(Token token, String message) {
     if (token.type == TokenType.EOF) {
       report(token.line, " at end", message);

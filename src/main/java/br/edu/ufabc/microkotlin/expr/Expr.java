@@ -1,5 +1,10 @@
 package br.edu.ufabc.microkotlin.expr;
 
+/**
+ * Representa as expressões.
+ *
+ * expression → [identifier "="] expression | or
+ */
 public abstract class Expr {
 
   public static interface Visitor<R> {

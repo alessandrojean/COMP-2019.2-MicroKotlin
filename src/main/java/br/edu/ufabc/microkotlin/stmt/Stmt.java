@@ -1,5 +1,8 @@
 package br.edu.ufabc.microkotlin.stmt;
 
+/**
+ * Representa um comando no programa.
+ */
 public abstract class Stmt {
 
   public static interface Visitor<R> {
