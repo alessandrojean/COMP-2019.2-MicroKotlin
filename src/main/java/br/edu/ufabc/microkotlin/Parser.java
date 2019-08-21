@@ -3,6 +3,7 @@ package br.edu.ufabc.microkotlin;
 import java.util.ArrayList;
 import java.util.List;
 import br.edu.ufabc.microkotlin.expr.*;
+import br.edu.ufabc.microkotlin.program.*;
 import br.edu.ufabc.microkotlin.stmt.*;
 import static br.edu.ufabc.microkotlin.TokenType.*;
 
@@ -28,12 +29,28 @@ public class Parser {
     this.tokens = tokens;
   }
 
-  public List<Stmt> parse() {
-    List<Stmt> statements = new ArrayList<>();
-    while (!isAtEnd()) {
-      statements.add(declaration());
+  public Program parse() {
+    List<StmtVal> constants = new ArrayList<>();
+    while (match(VAL)) {
+      constants.add((StmtVal) valDeclaration());
     }
 
+    List<Stmt> statements = main();
+    return new Program(constants, statements);
+  }
+
+  public List<Stmt> main() {
+    consume(FUN, "Expect 'fun' after constants.");
+    Token main = consume(IDENTIFIER, "Expect function name.");
+
+    if (!main.lexeme.equals("main")) {
+      error(main, "Expect the function name to be 'main'.");
+    }
+
+    consume(LEFT_PAREN, "Expect '(' after function name.");
+    consume(RIGHT_PAREN, "Expect ')' before block.");
+
+    List<Stmt> statements = block();
     return statements;
   }
 
@@ -157,6 +174,25 @@ public class Parser {
     Stmt body = statement();
 
     return new StmtWhile(condition, body);
+  }
+
+  /**
+   * Avaliação da declaração de constante.
+   *
+   * constant → "val" identifier ":" type ["=" expr] ";"
+   */
+  private Stmt valDeclaration() {
+    Token name = consume(IDENTIFIER, "Expect constant name.");
+    consume(COLLON, "Expect ':' after constant name.");
+    Token type = consume(IDENTIFIER, "Expect constant type.");
+
+    Expr initializer = null;
+    if (match(EQUAL)) {
+      initializer = expression();
+    }
+
+    consume(SEMICOLON, "Expect ';' after variable declaration.");
+    return new StmtVal(name, type, initializer);
   }
 
   /**
