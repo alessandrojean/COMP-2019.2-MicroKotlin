@@ -40,13 +40,17 @@ public class Parser {
    * @return programa a ser transpilado
    */
   public Program parse() {
-    List<StmtVal> constants = new ArrayList<>();
-    while (match(VAL)) {
-      constants.add((StmtVal) valDeclaration());
-    }
+    try {
+      List<StmtVal> constants = new ArrayList<>();
+      while (match(VAL)) {
+        constants.add((StmtVal) valDeclaration());
+      }
 
-    List<Stmt> statements = main();
-    return new Program(constants, statements);
+      List<Stmt> statements = main();
+      return new Program(constants, statements);
+    } catch (ParseError e) {
+      return null;
+    }
   }
 
   /**
@@ -65,7 +69,15 @@ public class Parser {
     consume(LEFT_PAREN, "Expect '(' after function name.");
     consume(RIGHT_PAREN, "Expect ')' before block.");
 
-    List<Stmt> statements = block();
+    List<Stmt> statements = new ArrayList<>();
+    consume(LEFT_BRACE, "Expect '{' before statements.");
+
+    while (!check(RIGHT_BRACE) && !isAtEnd()) {
+      statements.add(declaration());
+    }
+
+    consume(RIGHT_BRACE, "Expect '}' after statements.");
+
     return statements;
   }
 
@@ -412,7 +424,13 @@ public class Parser {
     }
 
     if (match(IDENTIFIER)) {
-      return new ExprVariable(previous());
+      Token ident = previous();
+
+      if (ident.lexeme.matches("read(Int|String|Double|Boolean)")) {
+        return read(ident);
+      }
+
+      return new ExprVariable(ident);
     }
 
     if (match(LEFT_PAREN)) {
@@ -459,6 +477,19 @@ public class Parser {
     }
 
     throw error(peek(), "Expect expression.");
+  }
+
+  /**
+   * Avalia a leitura do teclado.
+   *
+   * readExpr → "read" type "(" ")"
+   */
+  private Expr read(Token token) {
+    String type = token.lexeme.replace("read", "");
+    consume(LEFT_PAREN, "Expect '(' after 'read'.");
+    consume(RIGHT_PAREN, "Expect ')' for 'read'.");
+
+    return new ExprRead(type);
   }
 
   /**
@@ -563,7 +594,9 @@ public class Parser {
       if (previous().type == SEMICOLON) return;
 
       switch (peek().type) {
+        case VAL:
         case VAR:
+        case FUN:
         case IF:
         case DO:
         case WHILE:

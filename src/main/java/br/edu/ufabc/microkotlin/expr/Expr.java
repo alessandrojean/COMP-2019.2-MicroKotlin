@@ -13,6 +13,7 @@ public abstract class Expr {
     R visitGroupingExpr(ExprGrouping expr);
     R visitLiteralExpr(ExprLiteral expr);
     R visitLogicalExpr(ExprLogical expr);
+    R visitReadExpr(ExprRead expr);
     R visitUnaryExpr(ExprUnary expr);
     R visitVariableExpr(ExprVariable expr);
   }
