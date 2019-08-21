@@ -30,7 +30,7 @@ fun main() {
     printLn("A área é " + (PI * raio * raio));
     printLn("");
 
-    printLn("Deseja continuar? (true/false) ");
+    print("Deseja continuar? (true/false) ");
     maisUm = readBoolean();
   }
 }
