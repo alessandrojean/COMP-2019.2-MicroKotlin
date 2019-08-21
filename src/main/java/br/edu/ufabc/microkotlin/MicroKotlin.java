@@ -5,7 +5,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import br.edu.ufabc.microkotlin.expr.Expr;
+import br.edu.ufabc.microkotlin.stmt.Stmt;
 
 /**
  * Classe inicial do transpilador da linguagem MicroKotlin.
@@ -56,7 +56,7 @@ public class MicroKotlin {
     Scanner scanner = new Scanner(sourceCode);
     List<Token> tokens = scanner.scanTokens();
     Parser parser = new Parser(tokens);
-    Expr expression = parser.parse();
+    List<Stmt> statements = parser.parse();
 
     if (hadError) return;
 

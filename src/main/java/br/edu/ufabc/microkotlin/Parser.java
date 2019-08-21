@@ -1,7 +1,9 @@
 package br.edu.ufabc.microkotlin;
 
+import java.util.ArrayList;
 import java.util.List;
 import br.edu.ufabc.microkotlin.expr.*;
+import br.edu.ufabc.microkotlin.stmt.*;
 import static br.edu.ufabc.microkotlin.TokenType.*;
 
 /**
@@ -9,6 +11,7 @@ import static br.edu.ufabc.microkotlin.TokenType.*;
  */
 public class Parser {
 
+  @SuppressWarnings("serial")
   private static class ParseError extends RuntimeException {}
 
   /**
@@ -25,12 +28,13 @@ public class Parser {
     this.tokens = tokens;
   }
 
-  public Expr parse() {
-    try {
-      return expression();
-    } catch (ParseError error) {
-      return null;
+  public List<Stmt> parse() {
+    List<Stmt> statements = new ArrayList<>();
+    while (!isAtEnd()) {
+      statements.add(declaration());
     }
+
+    return statements;
   }
 
   /**
@@ -40,6 +44,165 @@ public class Parser {
    */
   private Expr expression() {
     return assignment();
+  }
+
+  /**
+   * Avalia a declaração de variáveis ou constantes.
+   *
+   * declaration → variable | statement
+   */
+  private Stmt declaration() {
+    try {
+      if (match(VAR)) return varDeclaration();
+
+      return statement();
+    } catch (ParseError error) {
+      synchronize();
+      return null;
+    }
+  }
+
+  /**
+   * Avalia o comando.
+   *
+   * statement → expression ";"
+   *           | "print" ["Ln"] "(" expression ")" ";"
+   *           | "if" "(" expression ")" block ["else" block]
+   *           | "while" "(" expression ")" block
+   *           | "do" block "while" "(" expression ")" ";"
+   */
+  private Stmt statement() {
+    if (match(DO)) return doWhileStatement();
+    if (match(IF)) return ifStatement();
+    if (match(PRINT)) return printStatement();
+    if (match(PRINTLN)) return printLnStatement();
+    if (match(WHILE)) return whileStatement();
+    if (match(LEFT_BRACE)) return new StmtBlock(block());
+
+    return expressionStatement();
+  }
+
+  /**
+   * Avalia o comando do do-while.
+   *
+   * doWhileStmt → "do" block "while" "(" expression ")" ";"
+   */
+  private Stmt doWhileStatement() {
+    Stmt body = statement();
+    consume(WHILE, "Expect 'while' after block.");
+    consume(LEFT_PAREN, "Expect '(' after 'while'.");
+    Expr condition = expression();
+    consume(RIGHT_PAREN, "Expect ')' after condition.");
+    consume(SEMICOLON, "Expect ';' after do-while.");
+
+    return new StmtDoWhile(condition, body);
+  }
+
+  /**
+   * Avalia o comando do if.
+   *
+   * ifStmt → "if" "(" expression ")" block ["else" block]
+   */
+  private Stmt ifStatement() {
+    consume(LEFT_PAREN, "Expect '(' after 'if'.");
+    Expr condition = expression();
+    consume(RIGHT_PAREN, "Expect ')' after if condition.");
+
+    Stmt thenBranch = statement();
+    Stmt elseBranch = null;
+    if (match(ELSE)) {
+      elseBranch = statement();
+    }
+
+    return new StmtIf(condition, thenBranch, elseBranch);
+  }
+
+  /**
+   * Avalia o comando de impressão.
+   *
+   * printStmt → "print" ["Ln"] "(" expression ")" ";"
+   */
+  private Stmt printStatement() {
+    consume(LEFT_PAREN, "Expect '(' before expression.");
+    Expr value = expression();
+    consume(RIGHT_PAREN, "Expect ')' after expression.");
+    consume(SEMICOLON, "Expect ';' at end of line.");
+
+    return new StmtPrint(value);
+  }
+
+  /**
+   * Avalia o comando de impressão com quebra de linha.
+   *
+   * printStmt → "print" ["Ln"] "(" expression ")" ";"
+   */
+  private Stmt printLnStatement() {
+    consume(LEFT_PAREN, "Expect '(' before expression.");
+    Expr value = expression();
+    consume(RIGHT_PAREN, "Expect ')' after expression.");
+    consume(SEMICOLON, "Expect ';' at end of line.");
+
+    return new StmtPrintLn(value);
+  }
+
+  /**
+   * Avalia o comando do while.
+   *
+   * whileStmt → "while" "(" expression ")" block
+   */
+  private Stmt whileStatement() {
+    consume(LEFT_PAREN, "Expect '(' after 'while'.");
+    Expr condition = expression();
+    consume(RIGHT_PAREN, "Expect ')' after condition.");
+    Stmt body = statement();
+
+    return new StmtWhile(condition, body);
+  }
+
+  /**
+   * Avaliação da declaração de variável.
+   *
+   * variable → "var" identifier ":" type ["=" expr] ";"
+   */
+  private Stmt varDeclaration() {
+    Token name = consume(IDENTIFIER, "Expect variable name.");
+    consume(COLLON, "Expect ':' after variable name.");
+    Token type = consume(IDENTIFIER, "Expect variable type.");
+
+    Expr initializer = null;
+    if (match(EQUAL)) {
+      initializer = expression();
+    }
+
+    consume(SEMICOLON, "Expect ';' after variable declaration.");
+    return new StmtVar(name, type, initializer);
+  }
+
+  /**
+   * Avalia o comando de expressão.
+   *
+   * exprStmt → expression ";"
+   */
+  private Stmt expressionStatement() {
+    Expr expr = expression();
+    consume(SEMICOLON, "Expect ';' after expression.");
+    return new StmtExpression(expr);
+  }
+
+  /**
+   * Avalia o bloco de comandos.
+   *
+   * block → "{" {declaration} "}"
+   */
+  private List<Stmt> block() {
+    List<Stmt> statements = new ArrayList<>();
+
+    while(!check(RIGHT_BRACE) && !isAtEnd()) {
+      statements.add(declaration());
+    }
+
+    consume(RIGHT_BRACE, "Expect '}' after block.");
+    return statements;
   }
 
   /**
@@ -299,7 +462,6 @@ public class Parser {
 
       switch (peek().type) {
         case VAR:
-        case VAL:
         case IF:
         case DO:
         case WHILE:
