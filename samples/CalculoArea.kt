@@ -21,14 +21,14 @@ fun main() {
   printLn("+----------------------------+");
   printLn("| Cálculo de área do círculo |");
   printLn("+----------------------------+");
-  printLn();
+  printLn("");
 
   while (maisUm) {
     print("Digite o raio: ");
     raio = readInt();
 
     printLn("A área é " + (PI * raio * raio));
-    printLn();
+    printLn("");
 
     printLn("Deseja continuar? (true/false) ");
     maisUm = readBoolean();

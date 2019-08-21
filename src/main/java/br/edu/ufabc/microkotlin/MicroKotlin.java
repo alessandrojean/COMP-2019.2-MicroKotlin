@@ -5,6 +5,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import br.edu.ufabc.microkotlin.program.Program;
 
 /**
  * Classe inicial do transpilador da linguagem MicroKotlin.
@@ -54,10 +55,12 @@ public class MicroKotlin {
   private static void transpile(String sourceCode) {
     Scanner scanner = new Scanner(sourceCode);
     List<Token> tokens = scanner.scanTokens();
+    Parser parser = new Parser(tokens);
+    Program program = parser.parse();
 
-    for (Token token : tokens) {
-      System.out.println(token);
-    }
+    if (hadError) return;
+
+    // TODO: Transpiler.
   }
 
   /**
@@ -81,6 +84,20 @@ public class MicroKotlin {
   public static void report(int line, String where, String message) {
     System.err.printf("(%d) Error %s: %s%n", line, where, message);
     hadError = true;
+  }
+
+  /**
+   * Reporta um erro do Parser.
+   *
+   * @param token token com erro
+   * @param message mensagem de erro
+   */
+  public static void error(Token token, String message) {
+    if (token.type == TokenType.EOF) {
+      report(token.line, "at end", message);
+    } else {
+      report(token.line, " at '" + token.lexeme + "'", message);
+    }
   }
 
 }
