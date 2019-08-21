@@ -292,7 +292,7 @@ public class Transpiler implements
 
   @Override
   public String visitGroupingExpr(ExprGrouping expr) {
-    return "(" + stringify(evaluate(expr.expression)) + ")";
+    return "(" + evaluate(expr.expression) + ")";
   }
 
   @Override
