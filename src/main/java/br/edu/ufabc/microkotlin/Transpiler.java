@@ -2,9 +2,11 @@ package br.edu.ufabc.microkotlin;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import br.edu.ufabc.microkotlin.expr.*;
 import br.edu.ufabc.microkotlin.program.*;
 import br.edu.ufabc.microkotlin.stmt.*;
@@ -129,6 +131,18 @@ public class Transpiler implements
       this.symbolTable = symbolTable;
 
       for (Stmt statement : statements) {
+        if (statement instanceof StmtBlock
+            || statement instanceof StmtDoWhile
+            || statement instanceof StmtWhile
+            || statement instanceof StmtIf) {
+          String out = execute(statement);
+          String outInd = Arrays.asList(out.split("\n")).stream()
+              .map(l -> "  " + l)
+              .collect(Collectors.joining("\n"));
+          builder.append(outInd + "\n");
+          continue;
+        }
+
         builder.append("  " + execute(statement) + "\n");
       }
     } finally {
@@ -140,7 +154,7 @@ public class Transpiler implements
 
   @Override
   public String visitBlockStmt(StmtBlock stmt) {
-    return "{\n" + executeBlock(stmt.statements, new SymbolTable(symbolTable)) + "}\n";
+    return "{\n" + executeBlock(stmt.statements, new SymbolTable(symbolTable)) + "}";
   }
 
   @Override
@@ -341,7 +355,7 @@ public class Transpiler implements
         return left + " <= " + right;
       case BANG_EQUAL:
         return left + " != " + right;
-      case EQUAL:
+      case EQUAL_EQUAL:
         return left + " == " + right;
       case MINUS:
         // checkNumberOperands(expr.operator, left, right);
