@@ -2,12 +2,16 @@ package br.edu.ufabc.microkotlin;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import br.edu.ufabc.microkotlin.expr.*;
 import br.edu.ufabc.microkotlin.program.*;
 import br.edu.ufabc.microkotlin.stmt.*;
+
+import static br.edu.ufabc.microkotlin.Variable.VariableProperty.*;
 
 /**
  * Efetua a tradução do código em MicroKotlin para Java.
@@ -37,6 +41,11 @@ public class Transpiler implements
     TYPES.put("Boolean", "boolean");
     TYPES.put("String", "String");
   }
+
+  /**
+   * Tabela de símbolos para as variáveis e constantes.
+   */
+  private SymbolTable symbolTable = new SymbolTable();
 
   /**
    * Arquivo de saída do tradutor.
@@ -114,11 +123,30 @@ public class Transpiler implements
     return builder.toString();
   }
 
-  private String executeBlock(List<Stmt> statements) {
+  private String executeBlock(List<Stmt> statements, SymbolTable symbolTable) {
+    SymbolTable previous = this.symbolTable;
     StringBuilder builder = new StringBuilder();
 
-    for (Stmt statement : statements) {
-      builder.append("  " + execute(statement) + "\n");
+    try {
+      this.symbolTable = symbolTable;
+
+      for (Stmt statement : statements) {
+        if (statement instanceof StmtBlock
+            || statement instanceof StmtDoWhile
+            || statement instanceof StmtWhile
+            || statement instanceof StmtIf) {
+          String out = execute(statement);
+          String outInd = Arrays.asList(out.split("\n")).stream()
+              .map(l -> "  " + l)
+              .collect(Collectors.joining("\n"));
+          builder.append(outInd + "\n");
+          continue;
+        }
+
+        builder.append("  " + execute(statement) + "\n");
+      }
+    } finally {
+      this.symbolTable = previous;
     }
 
     return builder.toString();
@@ -126,7 +154,7 @@ public class Transpiler implements
 
   @Override
   public String visitBlockStmt(StmtBlock stmt) {
-    return "{\n" + executeBlock(stmt.statements) + "}\n";
+    return "{\n" + executeBlock(stmt.statements, new SymbolTable(symbolTable)) + "}";
   }
 
   @Override
@@ -173,7 +201,7 @@ public class Transpiler implements
     String value = evaluate(stmt.initializer);
     String type = transformType(stmt.type);
 
-    // TODO: Definir na tabela de símbolos.
+    symbolTable.define(stmt.name, CONSTANT, value);
     return "private static final " + type + " " +
         stmt.name.lexeme + " = " + value + ";";
   }
@@ -186,7 +214,7 @@ public class Transpiler implements
       value = evaluate(stmt.initializer);
     }
 
-    // TODO: Definir na tabela de símbolos.
+    symbolTable.define(stmt.name, VARIABLE, value);
     return type + " " + stmt.name.lexeme +
       (value != null ? " = " + value : "") + ";";
   }
@@ -204,7 +232,7 @@ public class Transpiler implements
   public String visitAssignExpr(ExprAssign expr) {
     String value = evaluate(expr.value);
 
-    // TODO: Redefinir o valor na tabela de símbolos.
+    symbolTable.assign(expr.name, value);
     return expr.name.lexeme + " = " + value;
   }
 
@@ -230,7 +258,7 @@ public class Transpiler implements
       case BANG:
         return "!" + right;
       case MINUS:
-        checkNumberOperand(expr.operator, right);
+        // checkNumberOperand(expr.operator, right);
         return "-" + right;
     }
 
@@ -240,7 +268,7 @@ public class Transpiler implements
 
   @Override
   public String visitVariableExpr(ExprVariable expr) {
-    // TODO: Efetuar o get na tabela de símbolos para dar erro caso não existir.
+    symbolTable.get(expr.name);
     return expr.name.lexeme;
   }
 
@@ -268,8 +296,7 @@ public class Transpiler implements
   }
 
   private boolean isVariable(String object) {
-    // TODO: Verificar na tabela de símbolos se a variável existe.
-    return true;
+    return symbolTable.contains(object);
   }
 
   private String stringify(Object object) {
@@ -315,42 +342,48 @@ public class Transpiler implements
 
     switch (expr.operator.type) {
       case GREATER:
-        checkNumberOperands(expr.operator, left, right);
+        // checkNumberOperands(expr.operator, left, right);
         return left + " > " + right;
       case GREATER_EQUAL:
-        checkNumberOperands(expr.operator, left, right);
+        // checkNumberOperands(expr.operator, left, right);
         return left + " >= " + right;
       case LESS:
-        checkNumberOperands(expr.operator, left, right);
+        // checkNumberOperands(expr.operator, left, right);
         return left + " < " + right;
       case LESS_EQUAL:
-        checkNumberOperands(expr.operator, left, right);
+        // checkNumberOperands(expr.operator, left, right);
         return left + " <= " + right;
       case BANG_EQUAL:
         return left + " != " + right;
-      case EQUAL:
+      case EQUAL_EQUAL:
         return left + " == " + right;
       case MINUS:
-        checkNumberOperands(expr.operator, left, right);
+        // checkNumberOperands(expr.operator, left, right);
         return left + " - " + right;
       case PLUS:
-        if (isString(left) || isString(right)) {
-          return left + " + " + right;
-        }
+        // Idealmente se faria a verificação dos tipos, mas não é o escopo
+        // do projeto isso, como definido na especificação:
+        // "Não é necessário verificar se é possível realizar as operações,
+        // devido aos tipos das variáveis."
+        return left + " + " + right;
 
-        if (isNumber(left) && isNumber(right)) {
-          return left + " + " + right;
-        }
+        // if (isString(left) || isString(right)) {
+        //   return left + " + " + right;
+        // }
 
-        throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
+        // if (isNumber(left) && isNumber(right)) {
+        //   return left + " + " + right;
+        // }
+
+        // throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
       case SLASH:
-        checkNumberOperands(expr.operator, left, right);
+        // checkNumberOperands(expr.operator, left, right);
         return left + " / " + right;
       case TIMES:
-        checkNumberOperands(expr.operator, left, right);
+        // checkNumberOperands(expr.operator, left, right);
         return left + " * " + right;
       case REM:
-        checkNumberOperands(expr.operator, left, right);
+        // checkNumberOperands(expr.operator, left, right);
         return left + " % " + right;
     }
 
