@@ -78,6 +78,10 @@ public class Parser {
 
     consume(RIGHT_BRACE, "Expect '}' after statements.");
 
+    if (!isAtEnd()) {
+      throw error(peek(), "Expect nothing after main function.");
+    }
+
     return statements;
   }
 
