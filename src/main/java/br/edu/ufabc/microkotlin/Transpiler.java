@@ -378,6 +378,10 @@ public class Transpiler implements
         // throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
       case SLASH:
         // checkNumberOperands(expr.operator, left, right);
+        if (right.equals("0")) {
+          throw new RuntimeError(expr.operator, "Division by zero.");
+        }
+
         return left + " / " + right;
       case TIMES:
         // checkNumberOperands(expr.operator, left, right);
